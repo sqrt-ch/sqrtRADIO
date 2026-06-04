@@ -42,51 +42,18 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Create or Update Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: artifacts/**/*
-          tag_name: v1.0.0
-          name: sqrtRADIO v1.0.0
-          body: |
-            ## sqrtRADIO v1.0.0 - Initial Release
-
-            ### Features
-            - **M3U Playlist Support**: Load and play radio stations from M3U playlists (standard and simple formats)
-            - **Multi-Protocol Support**: Play HLS, Icecast, MP3, AAC, and other streaming formats via FFmpeg
-            - **Live Radio & DVR Timeshift**: 
-              - Seek backwards/forwards on HLS streams with DVR windows
-              - Client-side buffering for Icecast streams with playback rewind (up to 10 minutes)
-            - **Audio Recording**: Record streams to multiple formats (MKV, MP3, AAC, OPUS, FLAC, OGG, etc.)
-            - **Volume & Balance Control**: Adjust volume (0-100%) and stereo balance (L/R)
-            - **Pause/Play**: Pause streams with automatic mute/unmute
-            - **Preset Playlists**: Quick access to curated radio stations (Kultur, Langwelle, HLS, Bartók, GitHub HiQ, etc.)
-            - **Keyboard Shortcuts**: Full keyboard navigation for hands-free operation
-            - **URL Management**: Copy, edit, and save M3U playlists
-            - **Web Browser Integration**: Open stream URLs in your default browser (TAB key)
-
-            ### Technical Details
-            - **Cross-Platform**: Works on Linux, Windows, and macOS
-            - **FFmpeg Integration**: Handles adaptive bitrate selection for master HLS playlists
-            - **Smart HLS Seeking**: Segment-aware seeking (VLC-style) without decoding unnecessary frames
-            - **Ring Buffer**: 10-minute PCM buffer for client-side Icecast rewind capability
-            - **Threading**: Non-blocking GUI with daemon threads for streaming and I/O operations
-            - **Reconnection**: Automatic stream reconnection with configurable delay
-
-            ### Requirements
-            - Python 3.14+
-            - FFmpeg
-            - Dependencies: `requests`, `sounddevice`, `numpy`
-
-            ### Supported Formats
-            - **Streaming**: HLS (.m3u8), Icecast, HTTP streams, RTMP
-            - **Audio Codecs**: MP3, AAC, OPUS, FLAC, OGG Vorbis, and more
-            - **Recording Containers**: MKV, MP3, MPEG-TS, AAC, M4A, OPUS, FLAC, OGG
-
-            Replicates the functionality of [m3u.js](https://www.sqrt.ch/Radio/m3u) with a desktop GUI.
+      - name: Upload to Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload v1.0.0 artifacts/**/* --clobber
