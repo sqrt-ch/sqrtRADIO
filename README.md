@@ -116,6 +116,8 @@ MIT License – See [LICENSE](LICENSE) file for details.
 
 ---
 
+<img src="sqrtRADIO.webp" width="800" alt="sqrtRADIO Screenshot">
+
 <a name="deutsch"></a>
 
 # sqrtRADIO
