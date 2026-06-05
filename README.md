@@ -10,15 +10,15 @@ sqrtRADIO is a Python-based M3U playlist radio player with advanced timeshift ca
 
 ### Features
 
-- **🎯 M3U Playlist Support** – Load HLS, Icecast, MP3, AAC, and other audio streams from M3U playlists
-- **📺 HLS/DVR Playback** – Play live HLS streams with optional timeshift and rewind capabilities
-- **⏪ Advanced Timeshift** – Rewind/fast-forward on streams that support DVR windows
-- **🔊 Client-Side Buffering** – Icecast streams can be rewound up to 10 minutes using a local ring buffer
-- **🎚️ Volume & Balance Control** – Adjust left/right balance and volume in real-time
-- **⏺️ Stream Recording** – Record any stream to MKV, MP3, AAC, OPUS, FLAC, OGG or other formats
-- **⏸️ Pause/Resume** – Pause playback while maintaining stream state
-- **⌨️ Keyboard Shortcuts** – Full keyboard control for navigation and playback
-- **🌐 Preset Playlists** – Quick access to curated Swiss radio stations and international feeds
+- ** M3U Playlist Support** – Load HLS, Icecast, MP3, AAC, and other audio streams from M3U playlists
+- ** HLS/DVR Playback** – Play live HLS streams with optional timeshift and rewind capabilities
+- ** Advanced Timeshift** – Rewind/fast-forward on streams that support DVR windows
+- ** Client-Side Buffering** – Icecast streams can be rewound up to 10 minutes using a local ring buffer
+- ** Volume & Balance Control** – Adjust left/right balance and volume in real-time
+- ** Stream Recording** – Record any stream to MKV, MP3, AAC, OPUS, FLAC, OGG or other formats
+- ** Pause/Resume** – Pause playback while maintaining stream state
+- ** Keyboard Shortcuts** – Full keyboard control for navigation and playback
+- ** Preset Playlists** – Quick access to curated Swiss radio stations and international feeds
 
 ### Requirements
 
@@ -130,15 +130,15 @@ sqrtRADIO ist ein Python-basierter M3U-Wiedergabelist-Radioplayer mit erweiterte
 
 ### Funktionen
 
-- **🎯 M3U-Wiedergabelisten-Unterstützung** – Laden Sie HLS-, Icecast-, MP3-, AAC- und andere Audioströme aus M3U-Wiedergabelisten
-- **📺 HLS/DVR-Wiedergabe** – Spielen Sie Live-HLS-Streams mit optionalem Zeitversatz und Rücklauf ab
-- **⏪ Erweiterter Zeitversatz** – Zurückspulen/Vorwärtsspulen bei Streams mit DVR-Fenster
-- **🔊 Client-seitiger Puffer** – Icecast-Streams können bis zu 10 Minuten mit lokalem Ringpuffer zurückgespult werden
-- **🎚️ Lautstärke- und Balancesteuerung** – Passen Sie Balance und Lautstärke in Echtzeit an
-- **⏺️ Stream-Aufnahme** – Zeichnen Sie Streams in MKV, MP3, AAC, OPUS, FLAC, OGG und anderen Formaten auf
-- **⏸️ Pause/Fortsetzen** – Pausieren Sie die Wiedergabe, während der Stream-Status erhalten bleibt
-- **⌨️ Tastaturkürzel** – Vollständige Tastatursteuerung für Navigation und Wiedergabe
-- **🌐 Voreingestellte Wiedergabelisten** – Schneller Zugriff auf kuratierte Schweizer Radiostationen und internationale Feeds
+- ** M3U-Wiedergabelisten-Unterstützung** – Laden Sie HLS-, Icecast-, MP3-, AAC- und andere Audioströme aus M3U-Wiedergabelisten
+- ** HLS/DVR-Wiedergabe** – Spielen Sie Live-HLS-Streams mit optionalem Zeitversatz und Rücklauf ab
+- ** Erweiterter Zeitversatz** – Zurückspulen/Vorwärtsspulen bei Streams mit DVR-Fenster
+- ** Client-seitiger Puffer** – Icecast-Streams können bis zu 10 Minuten mit lokalem Ringpuffer zurückgespult werden
+- ** Lautstärke- und Balancesteuerung** – Passen Sie Balance und Lautstärke in Echtzeit an
+- ** Stream-Aufnahme** – Zeichnen Sie Streams in MKV, MP3, AAC, OPUS, FLAC, OGG und anderen Formaten auf
+- ** Pause/Fortsetzen** – Pausieren Sie die Wiedergabe, während der Stream-Status erhalten bleibt
+- ** Tastaturkürzel** – Vollständige Tastatursteuerung für Navigation und Wiedergabe
+- ** Voreingestellte Wiedergabelisten** – Schneller Zugriff auf kuratierte Schweizer Radiostationen und internationale Feeds
 
 ### Anforderungen
 
