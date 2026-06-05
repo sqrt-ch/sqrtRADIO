@@ -84,13 +84,13 @@ sqrtRADIO is a Python-based M3U playlist radio player with advanced timeshift ca
 - Use **Vol +/−** buttons or keyboard shortcuts to adjust volume
 - Use **Bal L/R** buttons to pan between left and right channels
 
-### Preset Playlists
+### Preset Playlists Examples
 
-- **Kultur** – Swiss cultural radio stations
-- **Langwelle** – European long-wave broadcasts
+- **Kultur** – Swiss and international cultural radio stations
+- **Langwelle** – Nostalgic LW playlist
 - **HLS** – HLS/DVR-capable streams
 - **Permalink** – Simple URL-per-line format
-- **Bartók** – Classical music stations
+- **Bartók** – Playlist from the radio station
 - **GitHub HiQ** – High-quality international radio stations (via GitHub)
 
 ### Technical Details
@@ -206,12 +206,12 @@ sqrtRADIO ist ein Python-basierter M3U-Wiedergabelist-Radioplayer mit erweiterte
 
 ### Voreingestellte Wiedergabelisten
 
-- **Kultur** – Schweizer Kulturradiostationen
-- **Langwelle** – Europäische Langwellenübertragungen
+- **Kultur** – Schweizerische und internationale Kulturradiostationen
+- **Langwelle** – Europäische Langwellenstationen um 2014
 - **HLS** – HLS/DVR-fähige Streams
 - **Permalink** – Einfaches Datei-Format mit einer URL pro Zeile
-- **Bartók** – Klassische Musikstationen
-- **GitHub HiQ** – Hochwertige internationale Radiostationen (über GitHub)
+- **Bartók** – Klassische Musikstationen (vom Sender erstellte M3U)
+- **GitHub HiQ** – Hohe Bitraten (über GitHub)
 
 ### Technische Details
 
