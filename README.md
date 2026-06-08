@@ -4,7 +4,7 @@
 
 ---
 
-## 🎙️ Play Any Radio Stream — HLS, Icecast, MP3, and More
+## 🎙️ M3U Playlist Player — HLS, Icecast, MP3, and More
 
 sqrtRADIO is a Python-based M3U playlist radio player with advanced timeshift capabilities for DVR (Digital Video Recording) streams and Icecast/HTTP radio stations. It replicates the functionality of [m3u.js](https://www.sqrt.ch/Radio/m3u) with a full-featured GUI.
 
@@ -16,6 +16,7 @@ sqrtRADIO is a Python-based M3U playlist radio player with advanced timeshift ca
 - **Client-Side Buffering** – Icecast streams can be rewound up to 10 minutes using a local ring buffer
 - **Volume & Balance Control** – Adjust left/right balance and volume in real-time
 - **Stream Recording** – Record any stream to MKV, MP3, AAC, OPUS, FLAC, OGG or other formats
+- **Bitrate Detection** – Detects codec (e.g. MP3, FLAC, AAC), sample rate (kHz), and bitrate (kbps) from FFmpeg
 - **Pause/Resume** – Pause playback while maintaining stream state
 - **Keyboard Shortcuts** – Full keyboard control for navigation and playback
 - **Preset Playlists** – Quick access to curated Swiss radio stations and international feeds
@@ -126,7 +127,7 @@ MIT License – See [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🎙️ Beliebige Radiostationen abspielen — HLS, Icecast, MP3 und mehr
+## 🎙️ Ein M3U-Wiedergabelisten Abspieler — HLS, Icecast, MP3 und mehr
 
 sqrtRADIO ist ein Python-basierter M3U-Wiedergabelist-Radioplayer mit erweiterten Zeitversatz-Funktionen für DVR-Streams (Digital Video Recording) und Icecast/HTTP-Radiostationen. Es repliziert die Funktionalität von [m3u.js](https://www.sqrt.ch/Radio/m3u) mit einer vollwertigen GUI.
 
@@ -138,6 +139,7 @@ sqrtRADIO ist ein Python-basierter M3U-Wiedergabelist-Radioplayer mit erweiterte
 - **Client-seitiger Puffer** – Icecast-Streams können bis zu 10 Minuten mit lokalem Ringpuffer zurückgespult werden
 - **Lautstärke- und Balancesteuerung** – Passen Sie Balance und Lautstärke in Echtzeit an
 - **Stream-Aufnahme** – Zeichnen Sie Streams in MKV, MP3, AAC, OPUS, FLAC, OGG und anderen Formaten auf
+- **Datenrate-Anzeige** – Bestimmt den Kodec (z.B. MP3, FLAC, AAC), die Abtastrate (kHz) und die Bitrate (kbps) von FFmpeg
 - **Pause/Fortsetzen** – Pausieren Sie die Wiedergabe, während der Stream-Status erhalten bleibt
 - **Tastaturkürzel** – Vollständige Tastatursteuerung für Navigation und Wiedergabe
 - **Voreingestellte Wiedergabelisten** – Schneller Zugriff auf kuratierte Schweizer Radiostationen und internationale Feeds
