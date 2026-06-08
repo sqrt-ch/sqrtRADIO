@@ -23,6 +23,7 @@ from collections import deque
 import shutil
 import sys
 import webbrowser
+import re
 
 import numpy as np
 import requests
@@ -149,6 +150,8 @@ class Player:
         live_start_index: int | None = None,
         on_error=None,
         on_end=None,
+        on_bitrate=None,
+        hls_bw: int = 0,
         pcm_buffer: "PCMBuffer | None" = None,
     ):
         """
@@ -162,6 +165,8 @@ class Player:
         seek_sec          -- input-side -ss seek (VOD / fallback only).
         pcm_buffer        -- PCMBuffer instance for Icecast rewind; None to
                              disable buffering.
+        on_bitrate        -- Callback for updating bitrate display dynamically.
+        hls_bw            -- Extracted Bandwidth for HLS streams natively parsed.
         """
         self._kill_current()  # kill old process & advance generation
         gen = self._gen  # snapshot generation for new threads
@@ -173,7 +178,16 @@ class Player:
 
         t_r = threading.Thread(
             target=self._reader,
-            args=(url, seek_sec, live_start_index, on_error, on_end, gen),
+            args=(
+                url,
+                seek_sec,
+                live_start_index,
+                on_error,
+                on_end,
+                on_bitrate,
+                hls_bw,
+                gen,
+            ),
             daemon=True,
         )
         t_p = threading.Thread(target=self._player, args=(on_error, gen), daemon=True)
@@ -192,6 +206,10 @@ class Player:
             if self._proc is not None:
                 try:
                     self._proc.stdout.close()  # unblocks blocking read()
+                except Exception:
+                    pass
+                try:
+                    self._proc.stderr.close()  # unblocks blocking stderr read()
                 except Exception:
                     pass
                 try:
@@ -239,9 +257,11 @@ class Player:
         live_start_index: int | None,
         on_error,
         on_end,
+        on_bitrate,
+        hls_bw: int,
         gen: int,
     ):
-        cmd = ["ffmpeg"]
+        cmd = ["ffmpeg", "-hide_banner"]
 
         # Reconnect flags (ignored for local files, harmless)
         cmd += [
@@ -255,7 +275,6 @@ class Player:
 
         # Segment-accurate HLS seek (VLC-style): jump directly to the
         # Nth-from-the-end segment without decoding frames in between.
-        # This is what every serious HLS player does internally.
         if live_start_index is not None:
             cmd += ["-live_start_index", str(live_start_index)]
 
@@ -273,8 +292,6 @@ class Player:
             str(RATE),
             "-ac",
             str(CHANNELS),
-            "-loglevel",
-            "quiet",
             "pipe:1",
         ]
 
@@ -287,10 +304,93 @@ class Player:
                 self._proc = subprocess.Popen(
                     cmd,
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,
                     creationflags=CREATE_NO_WINDOW,
                 )
             proc = self._proc
+
+            # Start thread to parse metadata & bitrate from stderr stream dynamically
+            if on_bitrate:
+
+                def stderr_reader():
+                    buf = ""
+                    in_input = False
+                    icy_br = ""
+
+                    try:
+                        while self._gen == gen:
+                            try:
+                                c = proc.stderr.read(1)
+                                if not c:  # EOF
+                                    break
+                                c = c.decode("utf-8", errors="ignore")
+                            except (OSError, ValueError):
+                                break
+
+                            if c == "\r" or c == "\n":
+                                line = buf.strip()
+                                if line.startswith("Input #"):
+                                    in_input = True
+                                elif line.startswith("Output #"):
+                                    in_input = False
+
+                                if in_input:
+                                    if "icy-br" in line:
+                                        m = re.search(r"icy-br\s*:\s*([\d.]+)", line)
+                                        if m:
+                                            icy_br = str(round(float(m.group(1))))
+
+                                    # CODEC + SAMPLE RATE + BITRATE mapping
+                                    if "Stream #" in line and "Audio:" in line:
+                                        codec_match = re.search(
+                                            r"Audio:\s*([a-zA-Z0-9_]+)", line
+                                        )
+                                        codec = (
+                                            codec_match.group(1).upper()
+                                            if codec_match
+                                            else "AUDIO"
+                                        )
+                                        if "MP3" in codec:
+                                            codec = "MP3"
+
+                                        sr_match = re.search(r"(\d+)\s*Hz", line)
+                                        sr = (
+                                            f"{int(sr_match.group(1))/1000:g} kHz"
+                                            if sr_match
+                                            else ""
+                                        )
+
+                                        br_match = re.search(
+                                            r"(\d+)\s*kb/s", line
+                                        ) or re.search(r"(\d+)\s*kbps", line)
+                                        br = (
+                                            f"{br_match.group(1)} kbps"
+                                            if br_match
+                                            else ""
+                                        )
+
+                                        # Use the extracted bandwidth for HLS streams if missing
+                                        if not br and hls_bw > 0:
+                                            br = f"{round(hls_bw/1000)} kbps"
+
+                                        # Ignore icy-br for VBR/lossless formats to prevent the 128 kbps nonsense
+                                        if (
+                                            not br
+                                            and icy_br
+                                            and codec not in ("FLAC", "ALAC", "WAV")
+                                        ):
+                                            br = f"{icy_br} kbps"
+
+                                        parts = [p for p in (codec, sr, br) if p]
+                                        if parts:
+                                            on_bitrate(" • ".join(parts))
+                                buf = ""
+                            else:
+                                buf += c
+                    except Exception:
+                        pass
+
+                threading.Thread(target=stderr_reader, daemon=True).start()
 
             while self._gen == gen:
                 try:
@@ -375,6 +475,7 @@ class App:
         self._resolved_url = (
             ""  # best HLS variant URL; same as _current_url for non-adaptive streams
         )
+        self._hls_bw = 0  # stores HLS bandwidth in bps for UI display
         self._seek_offset = 0  # seconds behind live edge (always ≥ 0)
         self._dvr_window = 0.0  # DVR window size in seconds; 0 = unknown/no DVR
         self._dvr_segments: list[float] = []  # cached #EXTINF durations from manifest
@@ -393,7 +494,7 @@ class App:
         self._rec_proc: subprocess.Popen | None = None
 
         root.title("sqrtRADIO")
-        root.geometry("740x700")
+        root.geometry("880x740")
         root.minsize(620, 520)
 
         self._build_ui()
@@ -403,7 +504,7 @@ class App:
         self._start_seek_loop()
 
         # Load default playlist after UI is ready
-        root.after(200, lambda: self._get_m3u("https://www.sqrt.ch/Radio/ch.m3u"))
+        root.after(200, lambda: self._get_m3u("https://www.sqrt.ch/Radio/kultur.m3u"))
 
     # -- UI construction ------------------------------------------------------
 
@@ -532,14 +633,27 @@ class App:
         self._seek_btns.append(self._btn_live)
 
         # -- Status bar --
+        stat_frm = tk.Frame(self.root)
+        stat_frm.pack(fill="x", padx=6)
+
         self._v_status = tk.StringVar(value="Bereit.")
         tk.Label(
-            self.root,
+            stat_frm,
             textvariable=self._v_status,
             anchor="w",
             fg="#003080",
             font=(None, 10),
-        ).pack(fill="x", padx=6)
+        ).pack(side="left", fill="x", expand=True)
+
+        # Dynamic Bitrate Display integration
+        self._v_bitrate = tk.StringVar(value="")
+        tk.Label(
+            stat_frm,
+            textvariable=self._v_bitrate,
+            anchor="e",
+            fg="#003080",
+            font=(None, 10),
+        ).pack(side="right")
 
         # -- Keyboard toggle --
         kb_frm = tk.Frame(self.root)
@@ -672,8 +786,9 @@ class App:
         self._dvr_segments = []
         self._is_icecast = False
         self._pcm_buffer = None  # release ring-buffer memory
-        # Reset pause
+        # Reset pause and status/bitrate
         self._paused = False
+        self._v_bitrate.set("")
         self._btn_pause.config(text="⏸")
         # Stop recording if active gracefully
         if self._rec_proc is not None:
@@ -712,6 +827,7 @@ class App:
         resolved in a background thread before handing the URL to ffmpeg.
         """
         self._current_url = url
+        self._v_bitrate.set("")
         label = url[:65] + ("…" if len(url) > 65 else "")
         self._status(f"▶  {label}")
 
@@ -720,6 +836,7 @@ class App:
             self._seek_offset = 0
             self._dvr_window = 0.0
             self._dvr_segments = []
+            self._hls_bw = 0
             self._resolved_url = url  # reset; thread below updates to best variant
             if hls:
                 self._is_icecast = False
@@ -740,17 +857,24 @@ class App:
             _seek_sec = seek_sec
 
             def _start():
-                resolved = self._resolve_best_hls_variant(url)
+                resolved, bw = self._resolve_best_hls_variant(url)
                 if url == self._current_url:  # still the active station
                     self._resolved_url = resolved
+                    self._hls_bw = bw
                 else:
                     resolved = url  # stale; fall back to original
+                    bw = 0
+
                 self.player.play(
                     resolved,
                     seek_sec=_seek_sec,
                     on_error=lambda e: self.root.after(
                         0, lambda: self._status(f"ERROR: {e}")
                     ),
+                    on_bitrate=lambda b: self.root.after(
+                        0, lambda: self._v_bitrate.set(b)
+                    ),
+                    hls_bw=bw,
                 )
                 buf = self._pcm_buffer
                 if buf is not None:
@@ -759,6 +883,7 @@ class App:
             threading.Thread(target=_start, daemon=True).start()
         else:
             self._resolved_url = url
+            self._hls_bw = 0
             self.player.play(
                 url,
                 seek_sec=seek_sec,
@@ -766,6 +891,8 @@ class App:
                 on_error=lambda e: self.root.after(
                     0, lambda: self._status(f"ERROR: {e}")
                 ),
+                on_bitrate=lambda b: self.root.after(0, lambda: self._v_bitrate.set(b)),
+                hls_bw=0,
             )
 
     def on_tab(self):
@@ -897,19 +1024,20 @@ class App:
 
         threading.Thread(target=_probe, daemon=True).start()
 
-    def _resolve_best_hls_variant(self, url: str) -> str:
+    def _resolve_best_hls_variant(self, url: str) -> tuple[str, int]:
         """
         If *url* is a HLS master playlist (#EXT-X-STREAM-INF present), return
         the variant URL with the highest BANDWIDTH value — exactly what VLC does.
-        Returns *url* unchanged if it is already a media playlist, not HLS, or
-        if the request fails.
+        Returns the original *url* and `0` bandwidth if it's already a media playlist,
+        not HLS, or if the request fails.
         """
         try:
             r = requests.get(url, timeout=8)
             r.raise_for_status()
             lines = [l.strip() for l in r.text.splitlines()]
             if not any(l.startswith("#EXT-X-STREAM-INF") for l in lines):
-                return url  # already a media playlist
+                return url, 0  # already a media playlist
+
             base = url.rsplit("/", 1)[0] + "/"
             best_bw, best_url = -1, url
             i = 0
@@ -934,9 +1062,9 @@ class App:
                     i = j + 1
                 else:
                     i += 1
-            return best_url
+            return best_url, max(0, best_bw)
         except Exception:
-            return url
+            return url, 0
 
     def _seek(self, delta_sec: int):
         """
@@ -962,6 +1090,8 @@ class App:
                 on_error=lambda e: self.root.after(
                     0, lambda: self._status(f"ERROR: {e}")
                 ),
+                on_bitrate=lambda b: self.root.after(0, lambda: self._v_bitrate.set(b)),
+                hls_bw=self._hls_bw,
             )
             return
 
@@ -994,7 +1124,6 @@ class App:
                 # Clamp offset to what's actually in the manifest
                 behind = min(new_offset, max(0.0, dvr_dur - 2))
 
-                # --- VLC-style: find segment index, not byte position ---
                 # Walk from the live edge backward until we've covered
                 # 'behind' seconds, counting segments from the end.
                 if segs:
@@ -1031,6 +1160,10 @@ class App:
                     on_error=lambda e: self.root.after(
                         0, lambda: self._status(f"ERROR: {e}")
                     ),
+                    on_bitrate=lambda b: self.root.after(
+                        0, lambda: self._v_bitrate.set(b)
+                    ),
+                    hls_bw=self._hls_bw,
                 )
 
             self.root.after(0, apply)
@@ -1156,7 +1289,6 @@ class App:
                     seek_from_start = max(0, int(self._dvr_window - behind))
                     hls_seek_args = ["-ss", str(seek_from_start)]
 
-            # -c copy ensures the stream is dumped raw without any re-encoding.
             # Use the pre-resolved best-variant URL so the recording captures the
             # highest available bitrate, not the lowest (ffmpeg default).
             rec_url = (
@@ -1369,6 +1501,7 @@ def main():
 
     if sys.platform == "win32":
         import ctypes
+
         ctypes.windll.shcore.SetProcessDpiAwareness(1)
 
     root = tk.Tk()
