@@ -603,6 +603,14 @@ class App:
             anchor="center",
         ).pack(side="left", padx=4)
 
+        tk.Label(
+            header,
+            textvariable=self._v_hls_badge,
+            font=R["font_small"],
+            bg=R["bg"],
+            fg=R["btn_accent"],
+        ).pack(side="right", padx=12)
+
         # ── PRESET STATION BUTTONS ──────────────────────────────────────────
         sep1 = tk.Frame(self.root, bg=R["border"], height=2)
         sep1.pack(fill="x")
@@ -642,6 +650,7 @@ class App:
         ).pack(side="left")
 
         self._v_name = tk.StringVar(value="– KEIN SENDER –")
+        self._v_hls_badge = tk.StringVar(value="")
         tk.Label(
             name_row,
             textvariable=self._v_name,
@@ -815,7 +824,7 @@ class App:
                 seek_panel, text=label, command=lambda s=sec: self._seek(s),
                 width=5, bg=R["seek_bg"],
             )
-            b.config(state="disabled", fg=R["display_dim"])
+            b.config(state="disabled", fg=R["display_fg"])
             b.pack(side="left", padx=1, pady=3)
             self._seek_btns.append(b)
 
@@ -957,6 +966,11 @@ class App:
             self.m3u_arr = text.split("\n")
             self.simple = True
             self.k = 0
+
+        if any(l.strip() == "#PLAYLIST:HTTP Live Streaming" for l in self.m3u_arr):
+            self._v_hls_badge.set("▶ HTTP Live Streaming")
+        else:
+            self._v_hls_badge.set("")
 
         self.history.append(url)
         self._write_text()
