@@ -56,6 +56,7 @@ PRESETS = [
         "GitHub HiQ",
         "https://raw.githubusercontent.com/Pulham/Internet-Radio-HQ-URL-playlists/main/Radio%20Stations.m3u",
     ),
+    ("SerrebiRadio", "https://radio.serrebiradio.com/public/serrebiradio/playlist.m3u"),
 ]
 
 # Negative = go back in time; positive = go forward toward live
