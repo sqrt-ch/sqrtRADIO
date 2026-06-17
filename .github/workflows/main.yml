@@ -28,17 +28,10 @@ jobs:
           python-version: '3.14'
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install --no-cache-dir pyinstaller requests sounddevice numpy
+        run: pip install pyinstaller requests sounddevice numpy
 
       - name: Build
-        run: |
-          if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            pyinstaller --onefile --noconsole --target-architecture universal2 --name ${{ matrix.name }} sqrtRADIO.py
-          else
-            pyinstaller --onefile --noconsole --name ${{ matrix.name }} sqrtRADIO.py
-          fi
+        run: pyinstaller --onefile --noconsole --name ${{ matrix.name }} sqrtRADIO.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
