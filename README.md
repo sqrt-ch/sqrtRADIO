@@ -4,7 +4,7 @@
 
 ---
 
-## 🎙️ Vintage M3U Playlist Player — HLS, Icecast, MP3, and More
+## 🎙️ M3U Playlist Player — HLS, Icecast, MP3, and More
 
 sqrtRADIO is a Python-based M3U playlist radio player featuring a polished retro 80s theme, advanced timeshift capabilities for DVR (Digital Video Recording) streams, and local buffering for Icecast/HTTP radio stations. It replicates and expands the functionality of [m3u.js](https://www.sqrt.ch/Radio/m3u) with a full-featured, hardware-inspired GUI.
 
@@ -16,7 +16,6 @@ sqrtRADIO is a Python-based M3U playlist radio player featuring a polished retro
 - **Client-Side Buffering** – Icecast streams can be rewound up to 10 minutes using a local ring buffer.
 - **Preset Persistence & Customization** – Overwrite and save your own stream URLs directly to custom preset slots. Buttons persist locally across application restarts.
 - **Clipboard & File Export** – Quickly copy the currently playing station URL or the entire loaded M3U playlist to your clipboard, or export playlists as files.
-- **Retro 80s VFD Theme** – Immersive vintage interface featuring amber LED readouts on a dark green vacuum fluorescent display (VFD) background.
 - **Keyboard Shortcuts & Toggle** – Full keyboard control for navigation and playback, which can be dynamically enabled or disabled via a GUI checkbox.
 - **Volume & Balance Control** – Adjust left/right balance and volume in real-time.
 - **Stream Recording** – Record any stream to MKV, MP3, AAC, OPUS, FLAC, OGG or other formats.
