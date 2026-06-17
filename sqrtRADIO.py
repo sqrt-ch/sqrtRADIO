@@ -11,7 +11,7 @@ Dependencies:
     numpy>=1.24
 
 Usage:
-    python sqrtRADIO_dark.py
+    python sqrtRADIO.py
 """
 
 import tkinter as tk
