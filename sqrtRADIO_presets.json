@@ -1,0 +1,30 @@
+[
+  {
+    "label": "Kultur",
+    "url": "https://www.sqrt.ch/Radio/kultur.m3u"
+  },
+  {
+    "label": "Langwelle",
+    "url": "https://www.sqrt.ch/Radio/langwelle.m3u"
+  },
+  {
+    "label": "HLS",
+    "url": "https://www.sqrt.ch/Radio/hls.m3u"
+  },
+  {
+    "label": "Permalink",
+    "url": "https://www.sqrt.ch/Radio/simple.m3u"
+  },
+  {
+    "label": "Bartók",
+    "url": "https://www.sqrt.ch/Radio/bartok.m3u"
+  },
+  {
+    "label": "GitHub HiQ",
+    "url": "https://raw.githubusercontent.com/Pulham/Internet-Radio-HQ-URL-playlists/main/Radio%20Stations.m3u"
+  },
+  {
+    "label": "SBR",
+    "url": "https://radio.serrebiradio.com/public/serrebiradio/playlist.m3u"
+  }
+]
