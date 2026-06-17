@@ -124,11 +124,11 @@ MIT License – See [LICENSE](LICENSE) file for details.
 
 # sqrtRADIO
 
-[English](#-vintage-m3u-playlist-player---hls-icecast-mp3-and-more) | **Deutsch**
+[English](#-m3u-playlist-player---hls-icecast-mp3-and-more) | **Deutsch**
 
 ---
 
-## 🎙️ Ein Vintage M3U-Wiedergabelisten Abspieler — HLS, Icecast, MP3 und mehr
+## 🎙️ M3U-Wiedergabelisten Abspieler — HLS, Icecast, MP3 und mehr
 
 sqrtRADIO ist ein Python-basierter M3U-Wiedergabelist-Radioplayer mit einem stilvollen Retro-80er-Jahre-Design, erweiterten Zeitversatz-Funktionen (Timeshift) für DVR-Streams (Digital Video Recording) und lokalem Puffer für Icecast/HTTP-Radiostationen. Es repliziert und erweitert die Funktionalität von [m3u.js](https://www.sqrt.ch/Radio/m3u) mit einer vollwertigen, von klassischer Audio-Hardware inspirierten GUI.
 
@@ -140,7 +140,6 @@ sqrtRADIO ist ein Python-basierter M3U-Wiedergabelist-Radioplayer mit einem stil
 - **Client-seitiger Puffer** – Icecast-Streams können bis zu 10 Minuten mit einem lokalen Ringpuffer zurückgespult werden.
 - **Voreinstellungen-Speicherung & Persistenz** – Speichern und überschreiben Sie eigene Stream-URLs direkt auf den Preset-Schaltflächen. Eigene Tastenbelegungen bleiben nach Programmneustarts dauerhaft erhalten.
 - **Zwischenablage & Datei-Export** – Kopieren Sie die aktive Stations-URL oder die geladene M3U-Wiedergabeliste mit dedizierten Schaltflächen direkt in die Zwischenablage oder exportieren Sie diese als Datei.
-- **Retro-80er VFD-Design** – Eine visuell überarbeitete Benutzeroberfläche im Vintage-Stil mit bernsteinfarbener LED-Textanzeige auf dunkelgrünem VFD-Display-Hintergrund.
 - **Tastaturkürzel & Umschalter** – Vollständige Tastatursteuerung für Navigation und Wiedergabe, die über ein Kontrollkästchen in der GUI jederzeit flexibel ein- oder ausgeschaltet werden kann.
 - **Lautstärke- und Balancesteuerung** – Passen Sie Balance (L/R) und Lautstärke in Echtzeit an.
 - **Stream-Aufnahme** – Zeichnen Sie Streams verlustfrei in den Formaten MKV, MP3, AAC, OPUS, FLAC, OGG und anderen auf.
