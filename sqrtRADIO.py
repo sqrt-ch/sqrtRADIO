@@ -51,7 +51,7 @@ ICECAST_MAX_CHUNKS = int(ICECAST_BUFFER_SECS * BLOCKS_PER_SEC)
 # -- Preset playlists ------------------------- -------------------------------
 # These are the factory defaults, used to seed the presets file on first run.
 # After that, PRESETS_FILE is the single source of truth and every button
-# (including these) can be overwritten via the "Speichern" button.
+# (including these) can be overwritten via the "Save" button.
 DEFAULT_PRESETS = [
     ("Kultur", "https://www.sqrt.ch/Radio/kultur.m3u"),
     ("Langwelle", "https://www.sqrt.ch/Radio/langwelle.m3u"),
@@ -671,7 +671,7 @@ class App:
 
         self._btn_save_preset = _retro_btn(
             preset_outer,
-            text="💾 Speichern",
+            text="💾 SAVE",
             command=self._save_preset,
             padx=5,
             pady=2,
@@ -703,7 +703,7 @@ class App:
             fg=R["display_dim"],
         ).pack(side="left")
 
-        self._v_name = tk.StringVar(value="– KEIN SENDER –")
+        self._v_name = tk.StringVar(value="– NO STATION –")
         tk.Label(
             name_row,
             textvariable=self._v_name,
@@ -743,7 +743,7 @@ class App:
         self._url_box.pack(fill="x")
 
         copy_url_btn = _retro_btn(
-            url_sub, text="KOPIEREN", command=self._copy_url, padx=4, pady=1
+            url_sub, text="COPY", command=self._copy_url, padx=4, pady=1
         )
         copy_url_btn.pack(anchor="w", pady=2)
 
@@ -946,7 +946,7 @@ class App:
         stat_outer = _retro_frame(self.root, bg=R["display_bg"])
         stat_outer.pack(fill="x", padx=8, pady=4)
 
-        self._v_status = tk.StringVar(value="BEREIT.")
+        self._v_status = tk.StringVar(value="READY.")
         tk.Label(
             stat_outer,
             textvariable=self._v_status,
@@ -973,7 +973,7 @@ class App:
         self._v_kb = tk.BooleanVar(value=True)
         tk.Checkbutton(
             kb_frm,
-            text="TASTATUR",
+            text="KEYBOARD",
             variable=self._v_kb,
             command=self._kb_toggle,
             bg=R["bg"],
@@ -1006,7 +1006,7 @@ class App:
 
         tk.Label(
             m3u_outer,
-            text="M3U WIEDERGABELISTE",
+            text="M3U PLAYLIST",
             font=R["font_small"],
             bg=R["bg"],
             fg=R["display_dim"],
@@ -1032,17 +1032,17 @@ class App:
         btn_row = _retro_frame(m3u_outer, bg=R["bg"])
         btn_row.pack(anchor="w", pady=4)
 
-        _retro_btn(btn_row, text="KOPIEREN", command=self._copy_m3u, padx=4).pack(
+        _retro_btn(btn_row, text="COPY", command=self._copy_m3u, padx=4).pack(
             side="left", padx=2
         )
-        _retro_btn(btn_row, text="DATEI", command=self._save_m3u, padx=4).pack(
+        _retro_btn(btn_row, text="FILE", command=self._save_m3u, padx=4).pack(
             side="left", padx=2
         )
 
     # -- M3U fetch & parse ----------------------------------------------------
 
     def _get_m3u(self, url: str):
-        self._status(f"Lade: {url}")
+        self._status(f"Loading: {url}")
 
         def fetch():
             try:
@@ -1050,7 +1050,7 @@ class App:
                 r.raise_for_status()
                 self.root.after(0, lambda: self._parse_m3u(r.text, url))
             except Exception as exc:
-                self.root.after(0, lambda: self._status(f"Fehler: {exc}"))
+                self.root.after(0, lambda: self._status(f"Error: {exc}"))
 
         threading.Thread(target=fetch, daemon=True).start()
 
@@ -1074,7 +1074,7 @@ class App:
         self.history.append(url)
         self._write_text(preserve_scroll=False)  # fresh playlist → start at top
         self._status(
-            f"Geladen · {len(self.m3u_arr) - (0 if self.simple else 1)} Einträge · {url}"
+            f"Loaded · {len(self.m3u_arr) - (0 if self.simple else 1)} entries · {url}"
         )
 
     def _write_text(self, preserve_scroll: bool = True):
@@ -1145,7 +1145,7 @@ class App:
                 self._rec_proc.wait(timeout=5)
             self._rec_proc = None
             self._btn_rec.config(text="⏺ REC", fg="#ff4444")
-        self._status("■ Gestoppt.")
+        self._status("■ Stopped.")
         self._set_seek_enabled(False)
 
     # -- Playback -------------------------------------------------------------
@@ -1357,14 +1357,14 @@ class App:
                 if is_dvr:
                     n = len(segs)
                     self._status(
-                        f"▶ DVR-Fenster erkannt: {dur:.0f} s "
-                        f"({n} Segmente) — Timeshift aktiv"
+                        f"▶ DVR window detected: {dur:.0f} s "
+                        f"({n} segments) — timeshift active"
                     )
                 else:
                     self._pcm_buffer = PCMBuffer(ICECAST_MAX_CHUNKS)
                     self.player.attach_buffer(self._pcm_buffer)
                     self._set_seek_enabled(True)
-                    self._status("▶ Kein DVR — Timeshift via Client-Puffer aktiv")
+                    self._status("▶ No DVR — timeshift via client buffer active")
 
             self.root.after(0, _update)
 
@@ -1441,7 +1441,7 @@ class App:
             )
             return
 
-        self._status(f"⏳ Suche {new_offset} s hinter Live-Kante …")
+        self._status(f"⏳ Seeking {new_offset} s behind live edge …")
         self._set_seek_enabled(False)  # prevent repeated clicks while probing
 
         # Use cached segment list if available, else probe
@@ -1464,7 +1464,7 @@ class App:
                     self._dvr_window = 0.0
                     self._dvr_segments = []
                     self._set_seek_enabled(False)
-                    self._status("⚠ Kein DVR erkannt — Timeshift nicht möglich.")
+                    self._status("⚠ No DVR detected — timeshift not possible.")
                     return
 
                 # Clamp offset to what's actually in the manifest
@@ -1494,8 +1494,8 @@ class App:
                 self._dvr_segments = segs
                 self._set_seek_enabled(True)
                 self._status(
-                    f"◀ {behind:.0f} s hinter Live  "
-                    f"(Segment -{seg_idx}, DVR: {dvr_dur:.0f} s)"
+                    f"◀ {behind:.0f} s behind live  "
+                    f"(segment -{seg_idx}, DVR: {dvr_dur:.0f} s)"
                 )
                 # Use the pre-resolved best-variant URL so ffmpeg doesn't fall
                 # back to the lowest bitrate when replaying the master playlist.
@@ -1540,8 +1540,8 @@ class App:
             self._status("▶ Live")
         else:
             self._status(
-                f"◀ {new_offset} s hinter Live  "
-                f"(Puffer: {int(avail_secs)} s / {ICECAST_BUFFER_SECS} s max)"
+                f"◀ {new_offset} s behind live  "
+                f"(buffer: {int(avail_secs)} s / {ICECAST_BUFFER_SECS} s max)"
             )
         self._set_seek_enabled(True)
 
@@ -1567,12 +1567,12 @@ class App:
             self._set_vol(0.0)
             self._paused = True
             self._btn_pause.config(text="▶")
-            self._status("⏸ Pausiert (Stummschaltung).")
+            self._status("⏸ Paused (muted).")
         else:
             self._set_vol(self._pre_pause_vol)
             self._paused = False
             self._btn_pause.config(text="II")
-            self._status("▶ Wiedergabe fortgesetzt.")
+            self._status("▶ Playback resumed.")
 
     # -- Recording ------------------------------------------------------------
 
@@ -1586,17 +1586,17 @@ class App:
                 self._rec_proc.wait(timeout=5)
             self._rec_proc = None
             self._btn_rec.config(text="⏺ REC", fg="#ff4444")
-            self._status("Aufnahme gestoppt.")
+            self._status("Recording stopped.")
         else:
             # Start recording
             url = self._current_url
             if not url:
-                self._status("Kein Stream aktiv – erst START drücken.")
+                self._status("No stream active – press START first.")
                 return
 
             # .mkv is the most robust universal container for copying raw codecs (MP3, AAC, Ogg, etc.)
             path = filedialog.asksaveasfilename(
-                title="Wähle das richtige Audioformat!",
+                title="Choose the right audio format!",
                 filetypes=[
                     ("Universal Audio (MKV)", "*.mkv"),
                     ("MP3 Stream", "*.mp3"),
@@ -1606,7 +1606,7 @@ class App:
                     ("OPUS Audio", "*.opus"),
                     ("FLAC Audio", "*.flac"),
                     ("OGG Audio", "*.ogg"),
-                    ("Alle Dateien", "*"),
+                    ("All Files", "*"),
                 ],
                 defaultextension=".mkv",
                 initialfile="sqrtRADIO.mkv",
@@ -1668,9 +1668,9 @@ class App:
                     creationflags=CREATE_NO_WINDOW,
                 )
                 self._btn_rec.config(text="⏹ STOP", fg="#ffffff")
-                self._status(f"⏺ Aufnahme läuft → {path}")
+                self._status(f"⏺ Recording in progress → {path}")
             except Exception as exc:
-                self._status(f"Aufnahme-Fehler: {exc}")
+                self._status(f"Recording error: {exc}")
 
     # -- Volume ---------------------------------------------------------------
 
@@ -1725,7 +1725,7 @@ class App:
         if path:
             with open(path, "w", encoding="utf-8") as fh:
                 fh.write(content)
-            self._status(f"Gespeichert: {path}")
+            self._status(f"Saved: {path}")
 
     # -- Presets (single JSON-backed source, factory + user-saved) ------------
 
@@ -1752,7 +1752,7 @@ class App:
             with open(PRESETS_FILE, "w", encoding="utf-8") as fh:
                 json.dump(data, fh, ensure_ascii=False, indent=2)
         except Exception as exc:
-            self._status(f"Fehler beim Speichern der Presets: {exc}")
+            self._status(f"Error saving presets: {exc}")
 
     def _load_preset_url(self, label: str, url: str):
         """Preset button click: dispatch by URL type (mirrors tune()).
@@ -1804,11 +1804,11 @@ class App:
         """
         url = self._get_url()
         if not url:
-            self._status("Kein Inhalt im URL-Feld zum Speichern.")
+            self._status("No content in the URL field to save.")
             return
 
         label = simpledialog.askstring(
-            "Preset speichern", "Name für diesen Button:", parent=self.root
+            "Save preset", "Name for this button:", parent=self.root
         )
         if not label:
             return
@@ -1822,7 +1822,7 @@ class App:
 
         self._persist_presets()
         self._render_presets()
-        self._status(f"Preset gespeichert: {label}")
+        self._status(f"Preset saved: {label}")
 
     # -- Keyboard -------------------------------------------------------------
 
