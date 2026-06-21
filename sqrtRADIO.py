@@ -5,10 +5,8 @@ Replicates m3u.js (Martin Ambauen, https://www.sqrt.ch/Radio/m3u)
 
 Dependencies:
     FFmpeg https://ffmpeg.org/
-    pip install requests sounddevice numpy
-    requests>=2.28
+    pip install sounddevice
     sounddevice>=0.4
-    numpy>=1.24
 
 Usage:
     python sqrtRADIO.py
@@ -28,8 +26,9 @@ import json
 import os
 from pathlib import Path
 
-import numpy as np
-import requests
+import array
+import urllib.request
+import urllib.error
 import sounddevice as sd
 
 if sys.platform == "win32":
@@ -37,10 +36,19 @@ if sys.platform == "win32":
 else:
     CREATE_NO_WINDOW = 0
 
+
+def _http_get_text(url: str, timeout: float) -> str:
+    req = urllib.request.Request(url, headers={"User-Agent": "sqrtRADIO/1.0"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        charset = resp.headers.get_content_charset() or "utf-8"
+        return resp.read().decode(charset, errors="replace")
+
+
 # -- Audio constants -----------------------------------------------------------
 RATE = 44100
 CHANNELS = 2
-DTYPE = np.int16
+DTYPE = "int16"
+ARRAY_TYPECODE = "h"  # signed short == int16, for the stdlib `array` module
 CHUNK = 2048  # samples; int16 stereo → 8 192 bytes per block
 
 # -- Icecast ring-buffer constants --------------------------------------------
@@ -66,6 +74,7 @@ DEFAULT_PRESETS = [
 
 # Negative = go back in time; positive = go forward toward live
 SEEK_STEPS = [-600, -120, -30, -15, -5, +5, +15, +30]
+
 
 # -- Preset persistence ----------------------------------------------------
 def _app_dir() -> Path:
@@ -159,6 +168,7 @@ class Player:
         self._pcm_buffer: PCMBuffer | None = None
         self._replay_dq: deque[bytes] = deque()
         self._replay_lock = threading.Lock()
+        self._player_thread: threading.Thread | None = None
 
     # -- public --------------------------------------------------------------
 
@@ -168,7 +178,7 @@ class Player:
 
     @volume.setter
     def volume(self, v: float):
-        self._volume = float(np.clip(v, 0.0, 1.0))
+        self._volume = max(0.0, min(1.0, float(v)))
 
     @property
     def balance(self) -> float:
@@ -176,7 +186,7 @@ class Player:
 
     @balance.setter
     def balance(self, v: float):
-        self._balance = float(np.clip(v, -1.0, 1.0))
+        self._balance = max(-1.0, min(1.0, float(v)))
 
     def play(
         self,
@@ -226,6 +236,7 @@ class Player:
             daemon=True,
         )
         t_p = threading.Thread(target=self._player, args=(on_error, gen), daemon=True)
+        self._player_thread = t_p
         t_r.start()
         t_p.start()
 
@@ -235,6 +246,13 @@ class Player:
         self.detach_buffer()
         with self._replay_lock:
             self._replay_dq.clear()
+        # Wait for the audio thread to leave its PortAudio `with` block and
+        # close the stream cleanly. Without this, closing the app while the
+        # thread is still inside a native write() call can segfault, since
+        # daemon threads are abruptly killed at interpreter shutdown.
+        t_p = self._player_thread
+        if t_p is not None and t_p.is_alive():
+            t_p.join(timeout=2.0)
 
     # -- internals -----------------------------------------------------------
 
@@ -304,7 +322,7 @@ class Player:
         hls_bw: int,
         gen: int,
     ):
-        cmd = ["ffmpeg", "-hide_banner"]
+        cmd = ["ffmpeg", "-hide_banner", "-nostdin"]
 
         # Reconnect flags (ignored for local files, harmless)
         cmd += [
@@ -346,6 +364,7 @@ class Player:
                     return  # superseded before we even started
                 self._proc = subprocess.Popen(
                     cmd,
+                    stdin=subprocess.DEVNULL,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     creationflags=CREATE_NO_WINDOW,
@@ -466,7 +485,8 @@ class Player:
 
     def _player(self, on_error, gen: int):
         try:
-            with sd.OutputStream(
+            # RawOutputStream works on plain Python buffers (no numpy needed).
+            with sd.RawOutputStream(
                 samplerate=RATE,
                 channels=CHANNELS,
                 dtype=DTYPE,
@@ -483,14 +503,32 @@ class Player:
                             raw = self._q.get(timeout=0.5)
                         except queue.Empty:
                             continue
-                    pcm = np.frombuffer(raw, dtype=DTYPE).reshape(-1, CHANNELS).copy()
-                    pcm = (pcm * self._volume).clip(-32768, 32767).astype(DTYPE)
                     b = self._balance
-                    gain = np.array(
-                        [min(1.0, 1.0 - b), min(1.0, 1.0 + b)], dtype=np.float32
-                    )
-                    pcm = (pcm * gain).clip(-32768, 32767).astype(DTYPE)
-                    stream.write(pcm)
+                    v = self._volume
+                    if v == 1.0 and b == 0.0:
+                        # Fast path: no gain/clipping needed, output is
+                        # identical to the processed result below, just
+                        # without the per-sample Python loop.
+                        stream.write(raw)
+                        continue
+                    pcm = array.array(ARRAY_TYPECODE)
+                    pcm.frombytes(raw)
+                    gain_l = min(1.0, 1.0 - b) * v
+                    gain_r = min(1.0, 1.0 + b) * v
+                    for i in range(0, len(pcm), CHANNELS):
+                        left = int(pcm[i] * gain_l)
+                        pcm[i] = (
+                            -32768
+                            if left < -32768
+                            else (32767 if left > 32767 else left)
+                        )
+                        right = int(pcm[i + 1] * gain_r)
+                        pcm[i + 1] = (
+                            -32768
+                            if right < -32768
+                            else (32767 if right > 32767 else right)
+                        )
+                    stream.write(pcm.tobytes())
         except Exception as exc:
             if on_error and self._gen == gen:
                 on_error(str(exc))
@@ -608,7 +646,7 @@ class App:
         # loaded from disk (seeded with DEFAULT_PRESETS on first run).
         self.presets: list[tuple[str, str]] = self._load_presets()
 
-        root.title("sqrtRADIO — Vintage M3U Receiver")
+        root.title("sqrtRADIO — M3U Playlist Player")
         root.geometry("900x780")
         root.minsize(640, 560)
         root.configure(bg=RETRO["bg"])
@@ -1046,9 +1084,8 @@ class App:
 
         def fetch():
             try:
-                r = requests.get(url, timeout=10)
-                r.raise_for_status()
-                self.root.after(0, lambda: self._parse_m3u(r.text, url))
+                text = _http_get_text(url, timeout=10)
+                self.root.after(0, lambda: self._parse_m3u(text, url))
             except Exception as exc:
                 self.root.after(0, lambda: self._status(f"Error: {exc}"))
 
@@ -1270,9 +1307,7 @@ class App:
         """
         # --- Method 1: manifest parsing ---
         try:
-            r = requests.get(url, timeout=8)
-            r.raise_for_status()
-            text = r.text
+            text = _http_get_text(url, timeout=8)
             lines = [l.strip() for l in text.splitlines()]
 
             # Follow first variant if this is a master playlist
@@ -1282,9 +1317,10 @@ class App:
                     if line and not line.startswith("#"):
                         variant = line if line.startswith("http") else base + line
                         try:
-                            r2 = requests.get(variant, timeout=8)
-                            r2.raise_for_status()
-                            lines = [l.strip() for l in r2.text.splitlines()]
+                            lines = [
+                                l.strip()
+                                for l in _http_get_text(variant, timeout=8).splitlines()
+                            ]
                         except Exception:
                             pass
                         break
@@ -1378,9 +1414,7 @@ class App:
         not HLS, or if the request fails.
         """
         try:
-            r = requests.get(url, timeout=8)
-            r.raise_for_status()
-            lines = [l.strip() for l in r.text.splitlines()]
+            lines = [l.strip() for l in _http_get_text(url, timeout=8).splitlines()]
             if not any(l.startswith("#EXT-X-STREAM-INF") for l in lines):
                 return url, 0  # already a media playlist
 
@@ -1675,14 +1709,14 @@ class App:
     # -- Volume ---------------------------------------------------------------
 
     def _set_vol(self, v: float):
-        self._volume = float(np.clip(v, 0.0, 1.0))
+        self._volume = max(0.0, min(1.0, float(v)))
         self.player.volume = self._volume
         self._v_vol.set(f"{round(self._volume * 100)} %")
 
     # -- Balance --------------------------------------------------------------
 
     def _set_bal(self, v: float):
-        self._balance_val = float(np.clip(v, -1.0, 1.0))
+        self._balance_val = max(-1.0, min(1.0, float(v)))
         self.player.balance = self._balance_val
         if abs(self._balance_val) < 0.05:
             self._v_bal.set("C")
@@ -1923,13 +1957,11 @@ class App:
             background=RETRO["display_dim"],
         )
         for clickable_tag in ("entry_name", "entry_url"):
-            box.tag_bind(
-                clickable_tag, "<Enter>", lambda e: box.config(cursor="hand2")
-            )
+            box.tag_bind(clickable_tag, "<Enter>", lambda e: box.config(cursor="hand2"))
             box.tag_bind(clickable_tag, "<Leave>", lambda e: box.config(cursor=""))
 
-        indices = range(1, len(self.m3u_arr)) if not self.simple else range(
-            len(self.m3u_arr)
+        indices = (
+            range(1, len(self.m3u_arr)) if not self.simple else range(len(self.m3u_arr))
         )
 
         for idx in indices:
