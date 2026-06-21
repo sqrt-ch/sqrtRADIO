@@ -4,23 +4,23 @@
 
 ---
 
-## 🎙️ M3U Playlist Player — HLS, Icecast, MP3, and More
+## M3U Playlist Player — HLS, Icecast, MP3, and More
 
-sqrtRADIO is a Python-based M3U playlist radio player featuring a polished retro 80s theme, advanced timeshift capabilities for DVR (Digital Video Recording) streams, and local buffering for Icecast/HTTP radio stations. It replicates and expands the functionality of [m3u.js](https://www.sqrt.ch/Radio/m3u) with a full-featured, hardware-inspired GUI.
+sqrtRADIO is a Python-based M3U playlist radio player with a retro 80s hardware-style GUI, timeshift for DVR streams, and local buffering for Icecast/HTTP stations. It replicates and extends [m3u.js](https://www.sqrt.ch/Radio/m3u).
 
 ### Features
 
 - **M3U Playlist Support** – Load HLS, Icecast, MP3, AAC, and other audio streams from M3U playlists.
-- **HLS/DVR Playback** – Play live HLS streams with optional timeshift and rewind capabilities.
-- **Advanced Timeshift** – Rewind/fast-forward on streams that support DVR windows.
+- **Nested Playlists** – If a playlist entry points to another `.m3u` file, sqrtRADIO loads it as a new playlist instead of playing it as a stream.
+- **HLS/DVR Playback** – Play live HLS streams with timeshift and rewind.
 - **Client-Side Buffering** – Icecast streams can be rewound up to 10 minutes using a local ring buffer.
-- **Preset Persistence & Customization** – Overwrite and save your own stream URLs directly to custom preset slots. Buttons persist locally across application restarts.
-- **Clipboard & File Export** – Quickly copy the currently playing station URL or the entire loaded M3U playlist to your clipboard, or export playlists as files.
-- **Keyboard Shortcuts & Toggle** – Full keyboard control for navigation and playback, which can be dynamically enabled or disabled via a GUI checkbox.
-- **Volume & Balance Control** – Adjust left/right balance and volume in real-time.
-- **Stream Recording** – Record any stream to MKV, MP3, AAC, OPUS, FLAC, OGG or other formats.
-- **Bitrate Detection** – Detects codec (e.g. MP3, FLAC, AAC), sample rate (kHz), and bitrate (kbps) from FFmpeg.
-- **Pause/Resume** – Mute and pause playback while maintaining stream state.
+- **Preset Persistence** – Save stream URLs to preset slots; they persist across restarts.
+- **Clipboard & File Export** – Copy the current station URL or the loaded M3U playlist to clipboard, or export it as a file.
+- **Keyboard Shortcuts** – Keyboard control for navigation and playback, can be toggled via a GUI checkbox.
+- **Volume & Balance Control** – Adjust left/right balance and volume in real time.
+- **Stream Recording** – Record a stream to MKV, MP3, AAC, OPUS, FLAC, OGG, or other formats.
+- **Bitrate Detection** – Detects codec (e.g. MP3, FLAC, AAC), sample rate (kHz), and bitrate (kbps) via FFmpeg.
+- **Pause/Resume** – Mute and pause playback while keeping stream state.
 
 ### Requirements
 
@@ -106,6 +106,9 @@ The player automatically detects DVR capabilities by:
 2. Checking total segment duration (>90 seconds indicates DVR).
 3. Falling back to `ffprobe` for non-HLS streams.
 
+#### Nested Playlists
+When a playlist entry or the URL field itself ends in `.m3u` (not `.m3u8`), `tune()` calls `_get_m3u()` on it instead of `_play()` — the new playlist replaces the current one rather than being played as an audio stream.
+
 #### Icecast Rewind
 Non-HLS streams (Icecast, HTTP MP3, etc.) are buffered locally in a 10-minute ring buffer (`PCMBuffer`), allowing seamless rewind without network latency.
 
@@ -124,27 +127,27 @@ MIT License – See [LICENSE](LICENSE) file for details.
 
 # sqrtRADIO
 
-[English](#-m3u-playlist-player---hls-icecast-mp3-and-more) | **Deutsch**
+[English](#m3u-playlist-player--hls-icecast-mp3-and-more) | **Deutsch**
 
 ---
 
-## 🎙️ M3U-Wiedergabelisten Abspieler — HLS, Icecast, MP3 und mehr
+## M3U-Wiedergabelisten Abspieler — HLS, Icecast, MP3 und mehr
 
-sqrtRADIO ist ein Python-basierter M3U-Wiedergabelist-Radioplayer mit einem stilvollen Retro-80er-Jahre-Design, erweiterten Zeitversatz-Funktionen (Timeshift) für DVR-Streams (Digital Video Recording) und lokalem Puffer für Icecast/HTTP-Radiostationen. Es repliziert und erweitert die Funktionalität von [m3u.js](https://www.sqrt.ch/Radio/m3u) mit einer vollwertigen, von klassischer Audio-Hardware inspirierten GUI.
+sqrtRADIO ist ein Python-basierter M3U-Wiedergabelist-Radioplayer mit Retro-80er-Hardware-GUI, Zeitversatz (Timeshift) für DVR-Streams und lokalem Puffer für Icecast/HTTP-Radiostationen. Es repliziert und erweitert [m3u.js](https://www.sqrt.ch/Radio/m3u).
 
 ### Funktionen
 
 - **M3U-Wiedergabelisten-Unterstützung** – Laden Sie HLS-, Icecast-, MP3-, AAC- und andere Audioströme aus M3U-Wiedergabelisten.
-- **HLS/DVR-Wiedergabe** – Spielen Sie Live-HLS-Streams mit optionalem Zeitversatz und Rücklauf ab.
-- **Erweiterter Zeitversatz** – Zurückspulen/Vorwärtsspulen bei Streams mit DVR-Fenster.
+- **Verschachtelte Playlists** – Zeigt ein Eintrag selbst auf eine weitere `.m3u`-Datei, lädt sqrtRADIO diese als neue Playlist, statt sie als Stream abzuspielen.
+- **HLS/DVR-Wiedergabe** – Spielen Sie Live-HLS-Streams mit Zeitversatz und Rücklauf ab.
 - **Client-seitiger Puffer** – Icecast-Streams können bis zu 10 Minuten mit einem lokalen Ringpuffer zurückgespult werden.
-- **Voreinstellungen-Speicherung & Persistenz** – Speichern und überschreiben Sie eigene Stream-URLs direkt auf den Preset-Schaltflächen. Eigene Tastenbelegungen bleiben nach Programmneustarts dauerhaft erhalten.
-- **Zwischenablage & Datei-Export** – Kopieren Sie die aktive Stations-URL oder die geladene M3U-Wiedergabeliste mit dedizierten Schaltflächen direkt in die Zwischenablage oder exportieren Sie diese als Datei.
-- **Tastaturkürzel & Umschalter** – Vollständige Tastatursteuerung für Navigation und Wiedergabe, die über ein Kontrollkästchen in der GUI jederzeit flexibel ein- oder ausgeschaltet werden kann.
+- **Voreinstellungen-Speicherung** – Speichern Sie Stream-URLs auf Preset-Schaltflächen; sie bleiben nach Programmneustarts erhalten.
+- **Zwischenablage & Datei-Export** – Kopieren Sie die aktive Stations-URL oder die geladene M3U-Wiedergabeliste in die Zwischenablage, oder exportieren Sie sie als Datei.
+- **Tastaturkürzel** – Tastatursteuerung für Navigation und Wiedergabe, über ein Kontrollkästchen umschaltbar.
 - **Lautstärke- und Balancesteuerung** – Passen Sie Balance (L/R) und Lautstärke in Echtzeit an.
-- **Stream-Aufnahme** – Zeichnen Sie Streams verlustfrei in den Formaten MKV, MP3, AAC, OPUS, FLAC, OGG und anderen auf.
-- **Datenrate-Anzeige** – Bestimmt dynamisch den Kodec (z.B. MP3, FLAC, AAC), die Abtastrate (kHz) und die Bitrate (kbps) über FFmpeg.
-- **Pause/Fortsetzen** – Pausieren (Stummschalten) Sie die Wiedergabe, während der Stream-Status im Hintergrund erhalten bleibt.
+- **Stream-Aufnahme** – Zeichnen Sie einen Stream in den Formaten MKV, MP3, AAC, OPUS, FLAC, OGG oder anderen auf.
+- **Datenrate-Anzeige** – Bestimmt Kodec (z.B. MP3, FLAC, AAC), Abtastrate (kHz) und Bitrate (kbps) über FFmpeg.
+- **Pause/Fortsetzen** – Pausieren (Stummschalten) Sie die Wiedergabe, der Stream-Status bleibt erhalten.
 
 ### Anforderungen
 
@@ -229,6 +232,9 @@ Der Player erkennt DVR-Funktionen automatisch durch:
 1. Analyse von HLS-Manifesten auf `#EXT-X-PLAYLIST-TYPE:EVENT` oder `#EXT-X-PLAYLIST-TYPE:VOD` Tags.
 2. Überprüfung der Gesamtsegmentdauer (>90 Sekunden zeigt DVR an).
 3. Fallback zu `ffprobe` für Nicht-HLS-Streams.
+
+#### Verschachtelte Playlists
+Endet ein Playlist-Eintrag oder der Inhalt des URL-Felds selbst auf `.m3u` (nicht `.m3u8`), ruft `tune()` `_get_m3u()` statt `_play()` auf — die neue Playlist ersetzt die aktuelle, statt als Audiostream abgespielt zu werden.
 
 #### Icecast-Rücklauf
 Nicht-HLS-Streams (Icecast, HTTP MP3, etc.) werden lokal in einem 10-Minuten-Ringpuffer (`PCMBuffer`) gepuffert, was nahtloses Zurückspulen ohne Netzwerklatenzen ermöglicht.
