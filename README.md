@@ -26,7 +26,7 @@ sqrtRADIO is a Python-based M3U playlist radio player with a retro 80s hardware-
 
 - **Python 3.10+**
 - **FFmpeg** – [Download from ffmpeg.org](https://ffmpeg.org/download.html)
-- Python packages: `sounddevice` (all other dependencies are Python standard library)
+- Python packages: `sounddevice`, `requests` (all other dependencies are Python standard library)
 
 ### Installation
 
@@ -37,7 +37,7 @@ sqrtRADIO is a Python-based M3U playlist radio player with a retro 80s hardware-
 
 2. **Install Python Dependencies**
    ```bash
-   pip install sounddevice
+   pip install sounddevice requests
    ```
 
 3. **Run sqrtRADIO**
@@ -153,7 +153,7 @@ sqrtRADIO ist ein Python-basierter M3U-Wiedergabelist-Radioplayer mit Retro-80er
 
 - **Python 3.10+**
 - **FFmpeg** – [Herunterladen von ffmpeg.org](https://ffmpeg.org/download.html)
-- Python-Pakete: `sounddevice` (alle übrigen Abhängigkeiten gehören zur Python-Standardbibliothek)
+- Python-Pakete: `sounddevice`, `requests` (alle übrigen Abhängigkeiten gehören zur Python-Standardbibliothek)
 
 ### Installation
 
@@ -164,7 +164,7 @@ sqrtRADIO ist ein Python-basierter M3U-Wiedergabelist-Radioplayer mit Retro-80er
 
 2. **Python-Abhängigkeiten installieren**
    ```bash
-   pip install sounddevice
+   pip install sounddevice requests
    ```
 
 3. **sqrtRADIO ausführen**

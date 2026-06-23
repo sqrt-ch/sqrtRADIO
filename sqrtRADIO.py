@@ -25,23 +25,26 @@ import re
 import json
 import os
 from pathlib import Path
-
 import array
-import urllib.request
-import urllib.error
+import io
+import itertools
+
 import sounddevice as sd
+import requests
 
 if sys.platform == "win32":
     CREATE_NO_WINDOW = subprocess.CREATE_NO_WINDOW
 else:
     CREATE_NO_WINDOW = 0
 
-
 def _http_get_text(url: str, timeout: float) -> str:
-    req = urllib.request.Request(url, headers={"User-Agent": "sqrtRADIO/1.0"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        charset = resp.headers.get_content_charset() or "utf-8"
-        return resp.read().decode(charset, errors="replace")
+    r = requests.get(
+        url,
+        timeout=timeout,
+        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+    )
+    r.raise_for_status()
+    return r.text
 
 
 # -- Audio constants -----------------------------------------------------------
@@ -137,8 +140,9 @@ class PCMBuffer:
     def tail(self, n: int) -> list[bytes]:
         """Return up to the last *n* chunks (oldest first)."""
         with self._lock:
-            lst = list(self._dq)
-        return lst[max(0, len(lst) - n) :]
+            if n >= len(self._dq):
+                return list(self._dq)
+            return list(reversed(list(itertools.islice(reversed(self._dq), n))))
 
 
 # -------------------------------------------------------------------------------
@@ -375,80 +379,69 @@ class Player:
             if on_bitrate:
 
                 def stderr_reader():
-                    buf = ""
                     in_input = False
                     icy_br = ""
 
                     try:
-                        while self._gen == gen:
-                            try:
-                                c = proc.stderr.read(1)
-                                if not c:  # EOF
-                                    break
-                                c = c.decode("utf-8", errors="ignore")
-                            except (OSError, ValueError):
+                        for line in io.TextIOWrapper(proc.stderr, encoding="utf-8", errors="ignore"):
+                            if self._gen != gen:
                                 break
+                            line = line.strip()
+                            if line.startswith("Input #"):
+                                in_input = True
+                            elif line.startswith("Output #"):
+                                in_input = False
 
-                            if c == "\r" or c == "\n":
-                                line = buf.strip()
-                                if line.startswith("Input #"):
-                                    in_input = True
-                                elif line.startswith("Output #"):
-                                    in_input = False
+                            if in_input:
+                                if "icy-br" in line:
+                                    m = re.search(r"icy-br\s*:\s*([\d.]+)", line)
+                                    if m:
+                                        icy_br = str(round(float(m.group(1))))
 
-                                if in_input:
-                                    if "icy-br" in line:
-                                        m = re.search(r"icy-br\s*:\s*([\d.]+)", line)
-                                        if m:
-                                            icy_br = str(round(float(m.group(1))))
+                                # CODEC + SAMPLE RATE + BITRATE mapping
+                                if "Stream #" in line and "Audio:" in line:
+                                    codec_match = re.search(
+                                        r"Audio:\s*([a-zA-Z0-9_]+)", line
+                                    )
+                                    codec = (
+                                        codec_match.group(1).upper()
+                                        if codec_match
+                                        else "AUDIO"
+                                    )
+                                    if "MP3" in codec:
+                                        codec = "MP3"
 
-                                    # CODEC + SAMPLE RATE + BITRATE mapping
-                                    if "Stream #" in line and "Audio:" in line:
-                                        codec_match = re.search(
-                                            r"Audio:\s*([a-zA-Z0-9_]+)", line
-                                        )
-                                        codec = (
-                                            codec_match.group(1).upper()
-                                            if codec_match
-                                            else "AUDIO"
-                                        )
-                                        if "MP3" in codec:
-                                            codec = "MP3"
+                                    sr_match = re.search(r"(\d+)\s*Hz", line)
+                                    sr = (
+                                        f"{int(sr_match.group(1))/1000:g} kHz"
+                                        if sr_match
+                                        else ""
+                                    )
 
-                                        sr_match = re.search(r"(\d+)\s*Hz", line)
-                                        sr = (
-                                            f"{int(sr_match.group(1))/1000:g} kHz"
-                                            if sr_match
-                                            else ""
-                                        )
+                                    br_match = re.search(
+                                        r"(\d+)\s*kb/s", line
+                                    ) or re.search(r"(\d+)\s*kbps", line)
+                                    br = (
+                                        f"{br_match.group(1)} kbps"
+                                        if br_match
+                                        else ""
+                                    )
 
-                                        br_match = re.search(
-                                            r"(\d+)\s*kb/s", line
-                                        ) or re.search(r"(\d+)\s*kbps", line)
-                                        br = (
-                                            f"{br_match.group(1)} kbps"
-                                            if br_match
-                                            else ""
-                                        )
+                                    # Use the extracted bandwidth for HLS streams if missing
+                                    if not br and hls_bw > 0:
+                                        br = f"{round(hls_bw/1000)} kbps"
 
-                                        # Use the extracted bandwidth for HLS streams if missing
-                                        if not br and hls_bw > 0:
-                                            br = f"{round(hls_bw/1000)} kbps"
+                                    # Ignore icy-br for VBR/lossless formats to prevent the 128 kbps nonsense
+                                    if (
+                                        not br
+                                        and icy_br
+                                        and codec not in ("FLAC", "ALAC", "WAV")
+                                    ):
+                                        br = f"{icy_br} kbps"
 
-                                        # Ignore icy-br for VBR/lossless formats to prevent the 128 kbps nonsense
-                                        if (
-                                            not br
-                                            and icy_br
-                                            and codec not in ("FLAC", "ALAC", "WAV")
-                                        ):
-                                            br = f"{icy_br} kbps"
-
-                                        parts = [p for p in (codec, sr, br) if p]
-                                        if parts:
-                                            on_bitrate(" • ".join(parts))
-                                buf = ""
-                            else:
-                                buf += c
+                                    parts = [p for p in (codec, sr, br) if p]
+                                    if parts:
+                                        on_bitrate(" • ".join(parts))
                     except Exception:
                         pass
 
@@ -506,29 +499,17 @@ class Player:
                     b = self._balance
                     v = self._volume
                     if v == 1.0 and b == 0.0:
-                        # Fast path: no gain/clipping needed, output is
-                        # identical to the processed result below, just
-                        # without the per-sample Python loop.
                         stream.write(raw)
                         continue
                     pcm = array.array(ARRAY_TYPECODE)
                     pcm.frombytes(raw)
                     gain_l = min(1.0, 1.0 - b) * v
                     gain_r = min(1.0, 1.0 + b) * v
-                    for i in range(0, len(pcm), CHANNELS):
-                        left = int(pcm[i] * gain_l)
-                        pcm[i] = (
-                            -32768
-                            if left < -32768
-                            else (32767 if left > 32767 else left)
-                        )
-                        right = int(pcm[i + 1] * gain_r)
-                        pcm[i + 1] = (
-                            -32768
-                            if right < -32768
-                            else (32767 if right > 32767 else right)
-                        )
-                    stream.write(pcm.tobytes())
+                    samples = pcm.tolist()
+                    left  = [max(-32768, min(32767, int(s * gain_l))) for s in samples[0::2]]
+                    right = [max(-32768, min(32767, int(s * gain_r))) for s in samples[1::2]]
+                    out   = [x for pair in zip(left, right) for x in pair]
+                    stream.write(array.array(ARRAY_TYPECODE, out).tobytes())
         except Exception as exc:
             if on_error and self._gen == gen:
                 on_error(str(exc))
