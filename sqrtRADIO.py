@@ -7,6 +7,7 @@ Dependencies:
     FFmpeg https://ffmpeg.org/
     pip install sounddevice
     sounddevice>=0.4
+    pip install requests
 
 Usage:
     python sqrtRADIO.py
