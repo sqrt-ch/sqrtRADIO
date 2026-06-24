@@ -4,14 +4,14 @@
 
 ---
 
-## M3U Playlist Player — HLS, Icecast, MP3, and More
+## M3U/PLS Playlist Player — HLS, Icecast, MP3, and More
 
-sqrtRADIO is a Python-based M3U playlist radio player with a retro 80s hardware-style GUI, timeshift for DVR streams, and local buffering for Icecast/HTTP stations. It replicates and extends [m3u.js](https://www.sqrt.ch/Radio/m3u).
+sqrtRADIO is a Python-based M3U/PLS playlist radio player with a retro 80s hardware-style GUI, timeshift for DVR streams, and local buffering for Icecast/HTTP stations. It replicates and extends [m3u.js](https://www.sqrt.ch/Radio/m3u).
 
 ### Features
 
-- **M3U Playlist Support** – Load HLS, Icecast, MP3, AAC, and other audio streams from M3U playlists.
-- **Nested Playlists** – If a playlist entry points to another `.m3u` file, sqrtRADIO loads it as a new playlist instead of playing it as a stream.
+- **M3U/PLS Playlist Support** – Load HLS, Icecast, MP3, AAC, and other audio streams from M3U or PLS playlists.
+- **Nested Playlists** – If a playlist entry points to another `.m3u` file, sqrtRADIO loads it as a new playlist instead of playing it as a stream. `.pls` entries are also fetched and displayed as a navigable list.
 - **HLS/DVR Playback** – Play live HLS streams with timeshift and rewind.
 - **Client-Side Buffering** – Icecast streams can be rewound up to 10 minutes using a local ring buffer.
 - **Preset Persistence** – Save stream URLs to preset slots; they persist across restarts.
@@ -106,8 +106,8 @@ The player automatically detects DVR capabilities by:
 2. Checking total segment duration (>90 seconds indicates DVR).
 3. Falling back to `ffprobe` for non-HLS streams.
 
-#### Nested Playlists
-When a playlist entry or the URL field itself ends in `.m3u` (not `.m3u8`), `tune()` calls `_get_m3u()` on it instead of `_play()` — the new playlist replaces the current one rather than being played as an audio stream.
+#### Nested Playlists & PLS Support
+When a playlist entry or the URL field itself ends in `.m3u` (not `.m3u8`), `tune()` calls `_get_m3u()` on it instead of `_play()` — the new playlist replaces the current one rather than being played as an audio stream. `.pls` URLs are handled the same way via `_get_pls()`, which parses the INI-style `FileN`/`TitleN` entries and populates the same playlist display used for M3U.
 
 #### Icecast Rewind
 Non-HLS streams (Icecast, HTTP MP3, etc.) are buffered locally in a 10-minute ring buffer (`PCMBuffer`), allowing seamless rewind without network latency.
@@ -131,14 +131,14 @@ MIT License – See [LICENSE](LICENSE) file for details.
 
 ---
 
-## M3U-Wiedergabelisten Abspieler — HLS, Icecast, MP3 und mehr
+## M3U/PLS-Wiedergabelisten Abspieler — HLS, Icecast, MP3 und mehr
 
-sqrtRADIO ist ein Python-basierter M3U-Wiedergabelist-Radioplayer mit Retro-80er-Hardware-GUI, Zeitversatz (Timeshift) für DVR-Streams und lokalem Puffer für Icecast/HTTP-Radiostationen. Es repliziert und erweitert [m3u.js](https://www.sqrt.ch/Radio/m3u).
+sqrtRADIO ist ein Python-basierter M3U/PLS-Wiedergabelisten-Radioplayer mit Retro-80er-Hardware-GUI, Zeitversatz (Timeshift) für DVR-Streams und lokalem Puffer für Icecast/HTTP-Radiostationen. Es repliziert und erweitert [m3u.js](https://www.sqrt.ch/Radio/m3u).
 
 ### Funktionen
 
-- **M3U-Wiedergabelisten-Unterstützung** – Laden Sie HLS-, Icecast-, MP3-, AAC- und andere Audioströme aus M3U-Wiedergabelisten.
-- **Verschachtelte Playlists** – Zeigt ein Eintrag selbst auf eine weitere `.m3u`-Datei, lädt sqrtRADIO diese als neue Playlist, statt sie als Stream abzuspielen.
+- **M3U/PLS-Wiedergabelisten-Unterstützung** – Laden Sie HLS-, Icecast-, MP3-, AAC- und andere Audioströme aus M3U- oder PLS-Wiedergabelisten.
+- **Verschachtelte Playlists** – Zeigt ein Eintrag selbst auf eine weitere `.m3u`-Datei, lädt sqrtRADIO diese als neue Playlist, statt sie als Stream abzuspielen. `.pls`-Einträge werden ebenso geladen und als navigierbare Liste angezeigt.
 - **HLS/DVR-Wiedergabe** – Spielen Sie Live-HLS-Streams mit Zeitversatz und Rücklauf ab.
 - **Client-seitiger Puffer** – Icecast-Streams können bis zu 10 Minuten mit einem lokalen Ringpuffer zurückgespult werden.
 - **Voreinstellungen-Speicherung** – Speichern Sie Stream-URLs auf Preset-Schaltflächen; sie bleiben nach Programmneustarts erhalten.
@@ -233,8 +233,8 @@ Der Player erkennt DVR-Funktionen automatisch durch:
 2. Überprüfung der Gesamtsegmentdauer (>90 Sekunden zeigt DVR an).
 3. Fallback zu `ffprobe` für Nicht-HLS-Streams.
 
-#### Verschachtelte Playlists
-Endet ein Playlist-Eintrag oder der Inhalt des URL-Felds selbst auf `.m3u` (nicht `.m3u8`), ruft `tune()` `_get_m3u()` statt `_play()` auf — die neue Playlist ersetzt die aktuelle, statt als Audiostream abgespielt zu werden.
+#### Verschachtelte Playlists & PLS-Unterstützung
+Endet ein Playlist-Eintrag oder der Inhalt des URL-Felds selbst auf `.m3u` (nicht `.m3u8`), ruft `tune()` `_get_m3u()` statt `_play()` auf — die neue Playlist ersetzt die aktuelle, statt als Audiostream abgespielt zu werden. `.pls`-URLs werden auf dieselbe Weise über `_get_pls()` verarbeitet, das die INI-Einträge `FileN`/`TitleN` parst und dieselbe Playlist-Anzeige wie M3U befüllt.
 
 #### Icecast-Rücklauf
 Nicht-HLS-Streams (Icecast, HTTP MP3, etc.) werden lokal in einem 10-Minuten-Ringpuffer (`PCMBuffer`) gepuffert, was nahtloses Zurückspulen ohne Netzwerklatenzen ermöglicht.

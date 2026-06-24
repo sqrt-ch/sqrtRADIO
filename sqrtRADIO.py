@@ -38,11 +38,14 @@ if sys.platform == "win32":
 else:
     CREATE_NO_WINDOW = 0
 
+
 def _http_get_text(url: str, timeout: float) -> str:
     r = requests.get(
         url,
         timeout=timeout,
-        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        },
     )
     r.raise_for_status()
     return r.text
@@ -384,7 +387,9 @@ class Player:
                     icy_br = ""
 
                     try:
-                        for line in io.TextIOWrapper(proc.stderr, encoding="utf-8", errors="ignore"):
+                        for line in io.TextIOWrapper(
+                            proc.stderr, encoding="utf-8", errors="ignore"
+                        ):
                             if self._gen != gen:
                                 break
                             line = line.strip()
@@ -422,11 +427,7 @@ class Player:
                                     br_match = re.search(
                                         r"(\d+)\s*kb/s", line
                                     ) or re.search(r"(\d+)\s*kbps", line)
-                                    br = (
-                                        f"{br_match.group(1)} kbps"
-                                        if br_match
-                                        else ""
-                                    )
+                                    br = f"{br_match.group(1)} kbps" if br_match else ""
 
                                     # Use the extracted bandwidth for HLS streams if missing
                                     if not br and hls_bw > 0:
@@ -507,9 +508,13 @@ class Player:
                     gain_l = min(1.0, 1.0 - b) * v
                     gain_r = min(1.0, 1.0 + b) * v
                     samples = pcm.tolist()
-                    left  = [max(-32768, min(32767, int(s * gain_l))) for s in samples[0::2]]
-                    right = [max(-32768, min(32767, int(s * gain_r))) for s in samples[1::2]]
-                    out   = [x for pair in zip(left, right) for x in pair]
+                    left = [
+                        max(-32768, min(32767, int(s * gain_l))) for s in samples[0::2]
+                    ]
+                    right = [
+                        max(-32768, min(32767, int(s * gain_r))) for s in samples[1::2]
+                    ]
+                    out = [x for pair in zip(left, right) for x in pair]
                     stream.write(array.array(ARRAY_TYPECODE, out).tobytes())
         except Exception as exc:
             if on_error and self._gen == gen:
@@ -1069,7 +1074,7 @@ class App:
                 text = _http_get_text(url, timeout=10)
                 self.root.after(0, lambda: self._parse_m3u(text, url))
             except Exception as exc:
-                self.root.after(0, lambda: self._status(f"Error: {exc}"))
+                self.root.after(0, lambda e=exc: self._status(f"Error: {e}"))
 
         threading.Thread(target=fetch, daemon=True).start()
 
@@ -1095,6 +1100,48 @@ class App:
         self._status(
             f"Loaded · {len(self.m3u_arr) - (0 if self.simple else 1)} entries · {url}"
         )
+
+    def _get_pls(self, url: str):
+        self._status(f"Loading: {url}")
+
+        def fetch():
+            try:
+                text = _http_get_text(url, timeout=10)
+                self.root.after(0, lambda: self._parse_pls(text, url))
+            except Exception as exc:
+                self.root.after(0, lambda e=exc: self._status(f"Error: {e}"))
+
+        threading.Thread(target=fetch, daemon=True).start()
+
+    def _parse_pls(self, text: str, url: str):
+        """Parse a PLS playlist into self.m3u_arr (same format as _parse_m3u)."""
+        files: dict[int, str] = {}
+        titles: dict[int, str] = {}
+        for line in text.splitlines():
+            line = line.strip()
+            m = re.match(r"(?i)File(\d+)=(.+)", line)
+            if m:
+                files[int(m.group(1))] = m.group(2).strip()
+                continue
+            m = re.match(r"(?i)Title(\d+)=(.+)", line)
+            if m:
+                titles[int(m.group(1))] = m.group(2).strip()
+
+        if not files:
+            self._status("PLS: no entries found.")
+            return
+
+        # Build entries in the same "<name>\n<url>" format used by M3U
+        self.m3u_arr = ["[pls]"]  # slot 0 placeholder (mirrors M3U header slot)
+        for n in sorted(files):
+            name = titles.get(n, f"Entry {n}")
+            self.m3u_arr.append(f"{name}\n{files[n]}")
+        self.simple = False
+        self.k = 1
+
+        self.history.append(url)
+        self._write_text(preserve_scroll=False)
+        self._status(f"Loaded · {len(self.m3u_arr) - 1} entries · {url}")
 
     def _write_text(self, preserve_scroll: bool = True):
         """Update name label, URL field and M3U box from current index k."""
@@ -1179,7 +1226,7 @@ class App:
         elif ".m3u" in url:
             self._get_m3u(url)
         elif ".pls" in url:
-            self.on_tab()
+            self._get_pls(url)
         else:
             self._play(url, hls=False)
 
@@ -1789,9 +1836,7 @@ class App:
         elif ".m3u" in url:
             self._get_m3u(url)
         elif ".pls" in url:
-            self._set_url(url)
-            self._v_name.set(label)
-            self.on_tab()
+            self._get_pls(url)
         else:
             self._set_url(url)
             self._v_name.set(label)
