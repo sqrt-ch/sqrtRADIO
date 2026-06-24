@@ -3,7 +3,7 @@ name: Build sqrtRADIO
 on:
   push:
     tags:
-      - 'v*' # Löst Build aus, wenn du einen Tag erstellst (z.B. v1.0.0)
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -13,10 +13,13 @@ jobs:
         include:
           - os: ubuntu-latest
             name: sqrtRADIO-linux
+            icon: assets/sqrtR.png
           - os: windows-latest
             name: sqrtRADIO-windows.exe
+            icon: assets/sqrtR.ico
           - os: macos-latest
             name: sqrtRADIO-macos
+            icon: assets/sqrtR.icns
 
     runs-on: ${{ matrix.os }}
 
@@ -30,14 +33,24 @@ jobs:
       - name: Install dependencies
         run: pip install pyinstaller requests sounddevice numpy
 
+      - name: Build .icns (macOS only)
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p assets/sqrtR.iconset
+          for size in 16 32 64 128 256 512; do
+            sips -z $size $size assets/sqrtR.png --out assets/sqrtR.iconset/icon_${size}x${size}.png
+          done
+          sips -z 1024 1024 assets/sqrtR.png --out assets/sqrtR.iconset/icon_512x512@2x.png
+          iconutil -c icns assets/sqrtR.iconset -o assets/sqrtR.icns
+
       - name: Build
-        run: pyinstaller --onefile --noconsole --name ${{ matrix.name }} sqrtRADIO.py
+        run: pyinstaller --onefile --noconsole --icon ${{ matrix.icon }} --name ${{ matrix.name }} sqrtRADIO.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
-          path: dist/${{ matrix.name }}* # Lädt die generierte Binärdatei hoch
+          path: dist/${{ matrix.name }}*
 
   release:
     needs: build
