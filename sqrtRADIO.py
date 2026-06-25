@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-sqrtRADIO: Python M3U Player with Claude AI
+sqrtRADIO: Python M3U/PLS Player with Claude AI
 Replicates m3u.js (Martin Ambauen, https://www.sqrt.ch/Radio/m3u)
 
 Dependencies:
@@ -23,6 +23,7 @@ import shutil
 import sys
 import webbrowser
 import re
+from urllib.parse import urlparse
 import json
 import os
 from pathlib import Path
@@ -633,7 +634,7 @@ class App:
         # loaded from disk (seeded with DEFAULT_PRESETS on first run).
         self.presets: list[tuple[str, str]] = self._load_presets()
 
-        root.title("sqrtRADIO — M3U Playlist Player")
+        root.title("sqrtRADIO Playlist Player")
         root.geometry("900x780")
         root.minsize(640, 560)
         root.configure(bg=RETRO["bg"])
@@ -668,7 +669,7 @@ class App:
 
         tk.Label(
             header,
-            text="M3U RADIO PLAYER",
+            text="M3U/PLS RADIO PLAYER",
             font=R["font_small"],
             bg=R["bg"],
             fg=R["display_dim"],
@@ -767,10 +768,10 @@ class App:
         )
         self._url_box.pack(fill="x")
 
-        copy_url_btn = _retro_btn(
-            url_sub, text="COPY", command=self._copy_url, padx=4, pady=1
-        )
-        copy_url_btn.pack(anchor="w", pady=2)
+        btn_url_row = tk.Frame(url_sub, bg=R["display_bg"])
+        btn_url_row.pack(anchor="w", pady=2)
+        _retro_btn(btn_url_row, text="COPY", command=self._copy_url, padx=4, pady=1).pack(side="left", padx=(0, 4))
+        _retro_btn(btn_url_row, text="PASTE", command=self._paste_url, padx=4, pady=1).pack(side="left")
 
         # ── TRANSPORT CONTROLS ──────────────────────────────────────────────
         sep3 = tk.Frame(self.root, bg=R["border"], height=2)
@@ -1063,6 +1064,9 @@ class App:
         _retro_btn(btn_row, text="FILE", command=self._save_m3u, padx=4).pack(
             side="left", padx=2
         )
+        _retro_btn(btn_row, text="📂 LOAD LOCAL", command=self._load_local_playlist, padx=4).pack(
+            side="left", padx=2
+        )
 
     # -- M3U fetch & parse ----------------------------------------------------
 
@@ -1143,6 +1147,38 @@ class App:
         self._write_text(preserve_scroll=False)
         self._status(f"Loaded · {len(self.m3u_arr) - 1} entries · {url}")
 
+    @staticmethod
+    def _entry_url(lines: list[str]) -> str:
+        """Return the stream URL from a parsed entry's lines.
+
+        Skips directive lines (starting with #) so that tags like
+        #EXTVLCOPT don't get mistaken for the URL.
+        """
+        for line in lines[1:]:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                return line
+        return ""
+
+    def _load_local_playlist(self):
+        """Open a local .m3u or .pls file and load it as the current playlist."""
+        path = filedialog.askopenfilename(
+            title="Open local playlist",
+            filetypes=[("Playlist files", "*.m3u *.m3u8 *.pls"), ("All files", "*.*")],
+        )
+        if not path:
+            return
+        try:
+            text = Path(path).read_text(encoding="utf-8", errors="replace")
+        except Exception as exc:
+            self._status(f"Error reading file: {exc}")
+            return
+        label = Path(path).name
+        if path.lower().endswith(".pls"):
+            self._parse_pls(text, label)
+        else:
+            self._parse_m3u(text, label)
+
     def _write_text(self, preserve_scroll: bool = True):
         """Update name label, URL field and M3U box from current index k."""
         if not self.m3u_arr:
@@ -1155,7 +1191,7 @@ class App:
         else:
             lines = entry.split("\n")
             self._v_name.set(lines[0].strip() if lines else "?")
-            self._set_url(lines[1].strip() if len(lines) > 1 else "")
+            self._set_url(self._entry_url(lines))
         self._render_m3u_box(preserve_scroll=preserve_scroll)
 
     # -- Navigation (mirrors JS sPlus / sMinus / sMin / sMax / sBack) ---------
@@ -1760,6 +1796,18 @@ class App:
         self.root.clipboard_clear()
         self.root.clipboard_append(self._get_url())
 
+    def _paste_url(self):
+        """Paste clipboard text into the URL box."""
+        try:
+            text = self.root.clipboard_get()
+        except tk.TclError:
+            return
+        text = text.strip()
+        self._set_url(text)
+        hostname = urlparse(text).hostname or "–"
+        self._v_name.set(hostname)
+
+
     def _export_m3u_text(self) -> str:
         """Reconstruct valid M3U/plain-URL text from self.m3u_arr.
 
@@ -1902,8 +1950,9 @@ class App:
     def _on_key(self, event):
         if not self._v_kb.get():
             return
-        # Let the user type in text fields without triggering transport
-        if isinstance(event.widget, tk.Text):
+        # Only suppress shortcuts when the user is typing in the URL box.
+        # The M3U box is read-only so keyboard control should still work there.
+        if event.widget is self._url_box:
             return
         k = event.keysym
         if k == "Return":
@@ -1999,7 +2048,7 @@ class App:
             else:
                 lines = entry.split("\n")
                 name = lines[0].strip() if lines else ""
-                url = lines[1].strip() if len(lines) > 1 else ""
+                url = self._entry_url(lines)
             if not url:
                 continue
 
@@ -2041,7 +2090,7 @@ class App:
         else:
             lines = entry.split("\n")
             label = lines[0].strip() if lines else "?"
-            url = lines[1].strip() if len(lines) > 1 else ""
+            url = self._entry_url(lines)
         if not url:
             return
         self.k = idx
