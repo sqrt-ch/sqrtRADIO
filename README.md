@@ -19,6 +19,8 @@ sqrtRADIO is a Python-based M3U/PLS playlist radio player with a retro 80s hardw
 - **Keyboard Shortcuts** – Keyboard control for navigation and playback, can be toggled via a GUI checkbox.
 - **Volume & Balance Control** – Adjust left/right balance and volume in real time.
 - **Stream Recording** – Record a stream to MKV, MP3, AAC, OPUS, FLAC, OGG, or other formats.
+- **Load Local Playlist** – Open a local `.m3u`, `.m3u8`, or `.pls` file directly from disk via the **📂 LOAD LOCAL** button — no network required.
+- **Paste URL** – Paste a stream URL from the clipboard with a single click; the STATION field is automatically updated with the hostname.
 - **Bitrate Detection** – Detects codec (e.g. MP3, FLAC, AAC), sample rate (kHz), and bitrate (kbps) via FFmpeg.
 - **Pause/Resume** – Mute and pause playback while keeping stream state.
 
@@ -52,6 +54,16 @@ sqrtRADIO is a Python-based M3U/PLS playlist radio player with a retro 80s hardw
 2. Click **▶ START** to play the selected station.
 3. Use arrow keys (← →) or navigation buttons (`<<`, `>>`) to browse through stations.
 4. Click **■** (or press **Q**) to stop playback.
+
+#### Pasting a URL
+1. Copy a stream URL to your clipboard.
+2. Click **PASTE** under the URL field — the URL is inserted and the STATION name updates to the hostname automatically.
+3. Click **▶ START** to play.
+
+#### Loading a Local Playlist
+1. Click **📂 LOAD LOCAL** below the M3U playlist area.
+2. Select a `.m3u`, `.m3u8`, or `.pls` file from your computer.
+3. The playlist is loaded instantly — no internet connection needed.
 
 #### Managing Presets
 1. Enter or modify a stream URL in the VFD display's **URL** text box.
@@ -107,7 +119,7 @@ The player automatically detects DVR capabilities by:
 3. Falling back to `ffprobe` for non-HLS streams.
 
 #### Nested Playlists & PLS Support
-When a playlist entry or the URL field itself ends in `.m3u` (not `.m3u8`), `tune()` calls `_get_m3u()` on it instead of `_play()` — the new playlist replaces the current one rather than being played as an audio stream. `.pls` URLs are handled the same way via `_get_pls()`, which parses the INI-style `FileN`/`TitleN` entries and populates the same playlist display used for M3U.
+When a playlist entry or the URL field itself ends in `.m3u` (not `.m3u8`), `tune()` calls `_get_m3u()` on it instead of `_play()` — the new playlist replaces the current one rather than being played as an audio stream. `.pls` URLs are handled the same way via `_get_pls()`, which parses the INI-style `FileN`/`TitleN` entries and populates the same playlist display used for M3U. Extra directive lines such as `#EXTVLCOPT` are silently skipped when extracting the stream URL from a playlist entry.
 
 #### Icecast Rewind
 Non-HLS streams (Icecast, HTTP MP3, etc.) are buffered locally in a 10-minute ring buffer (`PCMBuffer`), allowing seamless rewind without network latency.
@@ -146,6 +158,8 @@ sqrtRADIO ist ein Python-basierter M3U/PLS-Wiedergabelisten-Radioplayer mit Retr
 - **Tastaturkürzel** – Tastatursteuerung für Navigation und Wiedergabe, über ein Kontrollkästchen umschaltbar.
 - **Lautstärke- und Balancesteuerung** – Passen Sie Balance (L/R) und Lautstärke in Echtzeit an.
 - **Stream-Aufnahme** – Zeichnen Sie einen Stream in den Formaten MKV, MP3, AAC, OPUS, FLAC, OGG oder anderen auf.
+- **Lokale Playlist laden** – Öffnen Sie eine lokale `.m3u`-, `.m3u8`- oder `.pls`-Datei direkt vom Datenträger über die Schaltfläche **📂 LOAD LOCAL** — ohne Netzwerkverbindung.
+- **URL einfügen** – Fügen Sie eine Stream-URL aus der Zwischenablage per Klick ein; das STATION-Feld wird automatisch mit dem Hostnamen aktualisiert.
 - **Datenrate-Anzeige** – Bestimmt Kodec (z.B. MP3, FLAC, AAC), Abtastrate (kHz) und Bitrate (kbps) über FFmpeg.
 - **Pause/Fortsetzen** – Pausieren (Stummschalten) Sie die Wiedergabe, der Stream-Status bleibt erhalten.
 
@@ -179,6 +193,16 @@ sqrtRADIO ist ein Python-basierter M3U/PLS-Wiedergabelisten-Radioplayer mit Retr
 2. Klicken Sie auf **▶ START**, um die gewählte Station abzuspielen.
 3. Verwenden Sie die Pfeiltasten (← →) oder die Navigationstasten (`<<`, `>>`) zum Wechseln der Stationen.
 4. Klicken Sie auf **■** (oder drücken Sie **Q**), um die Wiedergabe zu stoppen.
+
+#### URL einfügen
+1. Kopieren Sie eine Stream-URL in die Zwischenablage.
+2. Klicken Sie auf **PASTE** unter dem URL-Feld — die URL wird eingefügt und der Stationsname automatisch auf den Hostnamen aktualisiert.
+3. Klicken Sie auf **▶ START**, um die Wiedergabe zu starten.
+
+#### Lokale Playlist laden
+1. Klicken Sie auf **📂 LOAD LOCAL** unterhalb des M3U-Playlist-Bereichs.
+2. Wählen Sie eine `.m3u`-, `.m3u8`- oder `.pls`-Datei von Ihrem Computer aus.
+3. Die Playlist wird sofort geladen — ohne Internetverbindung.
 
 #### Presets verwalten und speichern
 1. Tragen Sie eine Stream-URL direkt in das **URL**-Textfeld des VFD-Displays ein.
@@ -234,7 +258,7 @@ Der Player erkennt DVR-Funktionen automatisch durch:
 3. Fallback zu `ffprobe` für Nicht-HLS-Streams.
 
 #### Verschachtelte Playlists & PLS-Unterstützung
-Endet ein Playlist-Eintrag oder der Inhalt des URL-Felds selbst auf `.m3u` (nicht `.m3u8`), ruft `tune()` `_get_m3u()` statt `_play()` auf — die neue Playlist ersetzt die aktuelle, statt als Audiostream abgespielt zu werden. `.pls`-URLs werden auf dieselbe Weise über `_get_pls()` verarbeitet, das die INI-Einträge `FileN`/`TitleN` parst und dieselbe Playlist-Anzeige wie M3U befüllt.
+Endet ein Playlist-Eintrag oder der Inhalt des URL-Felds selbst auf `.m3u` (nicht `.m3u8`), ruft `tune()` `_get_m3u()` statt `_play()` auf — die neue Playlist ersetzt die aktuelle, statt als Audiostream abgespielt zu werden. `.pls`-URLs werden auf dieselbe Weise über `_get_pls()` verarbeitet, das die INI-Einträge `FileN`/`TitleN` parst und dieselbe Playlist-Anzeige wie M3U befüllt. Zusätzliche Direktiven wie `#EXTVLCOPT` werden beim Auslesen der Stream-URL aus einem Playlist-Eintrag stillschweigend übersprungen.
 
 #### Icecast-Rücklauf
 Nicht-HLS-Streams (Icecast, HTTP MP3, etc.) werden lokal in einem 10-Minuten-Ringpuffer (`PCMBuffer`) gepuffert, was nahtloses Zurückspulen ohne Netzwerklatenzen ermöglicht.
